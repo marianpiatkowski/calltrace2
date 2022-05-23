@@ -18,10 +18,8 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 """
 
 import time
-import subprocess
 import platform
 import unittest
-import warnings
 import calltrace2_binutils
 
 class TestBinUtils(unittest.TestCase) :
@@ -39,21 +37,15 @@ class TestBinUtils(unittest.TestCase) :
         print(f"=== Execution time of {self.id()}, {(time_end-self.time_start):.3f}s")
 
     def test_function_names_hello(self) :
-        warnings.simplefilter(action="ignore", category="ResourceWarning")
         result = self.binutils.get_function_names('hello', verbose=True)
         self.assertTrue(result)
-        function_names = [
-            subprocess.check_output(f"c++filt {name}", shell=True, encoding='utf8').rstrip('\n')
-            for name, _ in result ]
+        function_names = [ name for name, _ in result ]
         self.assertIn('say_hello()', function_names)
 
     def test_function_names_test(self) :
-        warnings.simplefilter(action="ignore", category="ResourceWarning")
         result = self.binutils.get_function_names('test', verbose=True)
         self.assertTrue(result)
-        function_names = [
-            subprocess.check_output(f"c++filt {name}", shell=True, encoding='utf8').rstrip('\n')
-            for name, _ in result ]
+        function_names = [ name for name, _ in result ]
         expected_names = [
             'func1()',
             'func2()',

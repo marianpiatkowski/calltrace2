@@ -43,25 +43,17 @@ class MacOSBinUtils(BinUtils) :
         return output.replace(":", "::")
 
     def get_function_names(self, elf, verbose=False) :
-        cmds = [f"gobjdump -w -t {elf}", "awk '$4 == \"FUN\"'"]
+        cmds = [f"gobjdump -w -t {elf}", "awk '$4 == \"FUN\"'", "c++filt"]
+        cmd = " | ".join(cmds)
         if verbose :
-            print("executing: " + " | ".join(cmds))
+            print("executing: " + cmd)
         process = subprocess.Popen(
-            cmds[0],
-            stdout=subprocess.PIPE,
+            cmd,
             shell=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
             encoding='utf8')
-        processes = [process]
-        for command in cmds[1:] :
-            process = subprocess.Popen(
-                command,
-                stdin = process.stdout,
-                stdout = subprocess.PIPE,
-                shell = True,
-                encoding = 'utf8')
         output = process.communicate()[0]
-        for process in processes :
-            process.wait()
         output = output.rstrip('\n').split('\n')
         results = []
         for line in output :
@@ -85,25 +77,17 @@ class LinuxBinUtils(BinUtils) :
         return output.replace(":", "::")
 
     def get_function_names(self, elf, verbose=False) :
-        cmds = [f"readelf -W -s {elf}", "awk '$4 == \"FUNC\"'"]
+        cmds = [f"readelf -W -s {elf}", "awk '$4 == \"FUNC\"'", "c++filt"]
+        cmd = " | ".join(cmds)
         if verbose :
-            print("executing: " + " | ".join(cmds))
+            print("executing: " + cmd)
         process = subprocess.Popen(
-            cmds[0],
-            stdout=subprocess.PIPE,
+            cmd,
             shell=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
             encoding='utf8')
-        processes = [process]
-        for command in cmds[1:] :
-            process = subprocess.Popen(
-                command,
-                stdin = process.stdout,
-                stdout = subprocess.PIPE,
-                shell = True,
-                encoding = 'utf8')
         output = process.communicate()[0]
-        for process in processes :
-            process.wait()
         output = output.rstrip('\n').split('\n')
         results = []
         for line in output :
