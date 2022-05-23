@@ -26,6 +26,20 @@ import gdb
 import platform
 import calltrace2_binutils
 
+class PrintEvent :
+    """
+    https://sourceware.org/gdb/onlinedocs/gdb/Basic-Python.html
+    """
+    def __init__(self, string, log) :
+        self._string = string
+        self._log = log
+
+    def __call__(self) :
+        if self._log is not None :
+            self._log.write(self._string + "\n")
+        else :
+            gdb.write(self._string + "\n", gdb.STDOUT)
+
 class EntryBreak(gdb.Breakpoint) :
     """
     https://sourceware.org/gdb/onlinedocs/gdb/Breakpoints-In-Python.html
@@ -36,11 +50,31 @@ class EntryBreak(gdb.Breakpoint) :
         self._addr = addr
         self._calltrace = calltrace
 
+    def stop(self) :
+        self._calltrace.entry_append(self._name, self._addr)
+        try :
+            ExitBreak(self._name, self._calltrace)
+        except ValueError :
+            print(f"Cannot set FinishBreakpoint for {self._name}")
+            pass
+        return False
+
 class ExitBreak(gdb.FinishBreakpoint) :
     """
     https://sourceware.org/gdb/onlinedocs/gdb/Finish-Breakpoints-in-Python.html#Finish-Breakpoints-in-Python
     """
-    pass
+    def __init__(self, name, calltrace) :
+        super().__init__(internal=True)
+        self._name = name
+        self._calltrace = calltrace
+
+    def out_of_scope(self) :
+        print(f"exit breakpoint for {self._name} out of scope")
+        self._calltrace.exit_append(self._name, fake=True)
+
+    def stop(self) :
+        self._calltrace.exit_append(self._name)
+        return False
 
 class CallTrace(gdb.Command) :
     """
@@ -73,6 +107,28 @@ class CallTrace(gdb.Command) :
     def setup_exit_handler(self) :
         gdb.events.exited.connect(self.finish)
 
+    def entry_append(self, name, addr) :
+        self._depth += 1
+        outstr = ("*" * self._depth) + " > " + name
+        if self._sourceinfo :
+            outstr += f" [[{self.binutils.addr2line(self.elf, addr)}]]"
+        gdb.post_event(PrintEvent(outstr, self._log))
+
+    def exit_append(self, name, fake=False) :
+        outstr = ("*" * self._depth) + " < " + name
+        if not fake :
+            pc = gdb.execute("print/x $pc", to_string=True)
+            addr = int(pc.split()[2], 16)
+            if not self._minimal :
+                outstr += f"@0x{addr:x}"
+            if self._sourceinfo :
+                outstr += f"  [[{self.binutils.addr2line(self.elf, addr)}]]"
+        else :
+            outstr += " (return out of scope)"
+        gdb.post_event(PrintEvent(outstr, self._log))
+        if self._depth > 0 :
+            self._depth -= 1
+
     def finish(self, event) :
         try :
             print(f"Execution finished, exit code {event.exit_code:d}")
@@ -84,7 +140,41 @@ class CallTrace(gdb.Command) :
             self._log = None
 
     def invoke(self, arg, from_tty) :
-        # TODO Marian: finish this
-        pass
+        args = gdb.string_to_argv(arg)
+        if len(args) == 1 :
+            if args[0] == "minimal" :
+                self._minimal = True
+                self._sourceinfo = False
+                self._enable_breakpoints()
+            if args[0] == "nominimal" :
+                self._minimal = False
+                self._enable_breakpoints()
+            if args[0] == "log" :
+                self._log = None
+                self._enable_breakpoints()
+            if args[0] == "sourceinfo" :
+                self._sourceinfo = True
+                self._enable_breakpoints()
+            if args[0] == "nosourceinfo" :
+                self._sourceinfo = False
+                self._enable_breakpoints()
+            if args[0] == "disable" :
+                for bp in self._breakpoints :
+                    bp.enable = False
+        elif len(args) == 2 :
+            if args[0] == "log" :
+                print(f"setting log to {args[1]}")
+                self._log = open(args[1], "w", encoding='utf8')
+            if args[0] == "break" :
+                print(f"adding breakpoint for {args[1]}")
+                info_addr = gdb.execute(f"info address {args[1]}", to_string=True)
+                addr = info_addr.split()[-1].rstrip('.')
+                self._breakpoints.append(EntryBreak(args[1], int(addr, 16), self))
+        elif len(args) == 0 :
+            gdb.execute("r")
+
+    def _enable_breakpoints(self) :
+        for bp in self._breakpoints :
+            bp.enable = True
 
 CallTrace()
