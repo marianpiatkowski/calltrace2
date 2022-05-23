@@ -51,9 +51,11 @@ class EntryBreak(gdb.Breakpoint) :
         self._calltrace = calltrace
 
     def stop(self) :
+        if not self.enabled :
+            return False
         self._calltrace.entry_append(self._name, self._addr)
         try :
-            ExitBreak(self._name, self._calltrace)
+            ExitBreak(self._name, self._calltrace, self)
         except ValueError :
             print(f"Cannot set FinishBreakpoint for {self._name}")
             pass
@@ -63,17 +65,20 @@ class ExitBreak(gdb.FinishBreakpoint) :
     """
     https://sourceware.org/gdb/onlinedocs/gdb/Finish-Breakpoints-in-Python.html#Finish-Breakpoints-in-Python
     """
-    def __init__(self, name, calltrace) :
+    def __init__(self, name, calltrace, entry) :
         super().__init__(internal=True)
         self._name = name
         self._calltrace = calltrace
+        self._entry = entry
 
     def out_of_scope(self) :
         print(f"exit breakpoint for {self._name} out of scope")
-        self._calltrace.exit_append(self._name, fake=True)
+        if self._entry.enabled :
+            self._calltrace.exit_append(self._name, fake=True)
 
     def stop(self) :
-        self._calltrace.exit_append(self._name)
+        if self._entry.enabled :
+            self._calltrace.exit_append(self._name)
         return False
 
 class CallTrace(gdb.Command) :
@@ -160,7 +165,7 @@ class CallTrace(gdb.Command) :
                 self._enable_breakpoints()
             if args[0] == "disable" :
                 for bp in self._breakpoints :
-                    bp.enable = False
+                    bp.enabled = False
         elif len(args) == 2 :
             if args[0] == "log" :
                 print(f"setting log to {args[1]}")
@@ -175,6 +180,6 @@ class CallTrace(gdb.Command) :
 
     def _enable_breakpoints(self) :
         for bp in self._breakpoints :
-            bp.enable = True
+            bp.enabled = True
 
 CallTrace()
