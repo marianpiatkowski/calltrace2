@@ -28,7 +28,11 @@ class BackTrace(gdb.Command) :
         args = gdb.string_to_argv(arg)
         if len(args) == 1 :
             self._outfile = args[0]
-        gdb.execute("set print frame-arguments presence")
+        try :
+            gdb.execute("set print frame-arguments presence")
+        except gdb.error :
+            print("Ignoring undefined item 'frame-arguments presence'")
+            pass
         self._write_bt_stack()
 
     def _write_bt_stack(self) :
