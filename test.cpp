@@ -1,6 +1,7 @@
 // Compile command: g++-7 -O0 -g -Wall -o test test.cpp
 
 #include <iostream>
+#include <vector>
 
 void func9()
 { // end
@@ -29,33 +30,36 @@ void func5()
   func5_1();
   func6();
 }
-void func4()
+void func4(const char *)
 {
   func5();
 }
-void func3_1()
+template<typename T1, typename T2>
+void func3_1(T1, T2)
 { // end
 }
-void func2_1()
+void func2_1(int, int)
 { // end
 }
 void func3()
 {
-  func4();
-  func3_1();
+  func4("");
+  func3_1(float(0.0), double(0.0));
 }
 void func2()
 {
-  func2_1();
+  func2_1(std::rand(), std::rand());
   func3();
 }
-void func1()
+template<typename T>
+std::vector<T> func1(T)
 {
   func2();
+  return {};
 }
 
 int main()
 {
-  func1();
+  func1(int(0.0));
   return 0;
 }

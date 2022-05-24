@@ -47,12 +47,12 @@ class TestBinUtils(unittest.TestCase) :
         self.assertTrue(result)
         function_names = [ name for name, _ in result ]
         expected_names = [
-            'func1()',
+            'std::vector<int, std::allocator<int> > func1<int>(int)',
             'func2()',
-            'func2_1()',
+            'func2_1(int, int)',
             'func3()',
-            'func3_1()',
-            'func4()',
+            'void func3_1<float, double>(float, double)',
+            'func4(char const*)',
             'func5()',
             'func5_1()',
             'func6()',

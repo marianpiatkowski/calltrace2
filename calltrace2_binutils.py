@@ -60,10 +60,10 @@ class MacOSBinUtils(BinUtils) :
             if not line :
                 continue
             line_splitted = line.split()
-            if len(line_splitted) != 7 :
+            if len(line_splitted) < 7 :
                 continue
             addr = int(line_splitted[0], 16)
-            name = line_splitted[-1]
+            name = " ".join(line_splitted[6:])
             if addr != 0 :
                 results.append((name, addr))
         return results
@@ -94,10 +94,10 @@ class LinuxBinUtils(BinUtils) :
             if not line :
                 continue
             line_splitted = line.split()
-            if len(line_splitted) != 8 :
+            if len(line_splitted) < 8 :
                 continue
             addr = int(line_splitted[1], 16)
-            name = line_splitted[-1]
+            name = " ".join(line_splitted[7:])
             if addr != 0 :
                 results.append((name, addr))
         return results
