@@ -170,6 +170,7 @@ class CallTrace(gdb.Command) :
             if args[0] == "log" :
                 print(f"setting log to {args[1]}")
                 self._log = open(args[1], "w", encoding='utf8')
+                self._enable_breakpoints()
             if args[0] == "break" :
                 print(f"adding breakpoint for {args[1]}")
                 info_addr = gdb.execute(f"info address {args[1]}", to_string=True)
