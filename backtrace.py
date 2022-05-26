@@ -17,6 +17,7 @@ You should have received a copy of the GNU General Public License
 along with this program. If not, see <http://www.gnu.org/licenses/>.
 """
 
+# pylint: disable=E0401
 import gdb
 
 class BackTrace(gdb.Command) :
@@ -32,7 +33,6 @@ class BackTrace(gdb.Command) :
             gdb.execute("set print frame-arguments presence")
         except gdb.error :
             print("Ignoring undefined item 'frame-arguments presence'")
-            pass
         self._write_bt_stack()
 
     def _write_bt_stack(self) :

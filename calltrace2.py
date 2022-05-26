@@ -22,8 +22,9 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 # export PYTHONPATH=''
 
-import gdb
 import platform
+# pylint: disable=E0401
+import gdb
 import calltrace2_binutils
 
 class PrintEvent :
@@ -58,7 +59,6 @@ class EntryBreak(gdb.Breakpoint) :
             ExitBreak(self._name, self._calltrace, self)
         except ValueError :
             print(f"Cannot set FinishBreakpoint for {self._name}")
-            pass
         return False
 
 class ExitBreak(gdb.FinishBreakpoint) :
@@ -135,10 +135,7 @@ class CallTrace(gdb.Command) :
             self._depth -= 1
 
     def finish(self, event) :
-        try :
-            print(f"Execution finished, exit code {event.exit_code:d}")
-        except Exception :
-            print("Execution finished")
+        print(f"Execution finished, exit code {event.exit_code:d}")
         if self._log is not None :
             print(f"results written to {self._log.name}")
             self._log.close()
