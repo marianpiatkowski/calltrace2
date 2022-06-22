@@ -143,41 +143,57 @@ class CallTrace(gdb.Command) :
 
     def invoke(self, arg, from_tty) :
         args = gdb.string_to_argv(arg)
-        if len(args) == 1 :
-            if args[0] == "minimal" :
-                self._minimal = True
-                self._sourceinfo = False
-                self._enable_breakpoints()
-            if args[0] == "nominimal" :
-                self._minimal = False
-                self._enable_breakpoints()
-            if args[0] == "log" :
-                self._log = None
-                self._enable_breakpoints()
-            if args[0] == "sourceinfo" :
-                self._sourceinfo = True
-                self._enable_breakpoints()
-            if args[0] == "nosourceinfo" :
-                self._sourceinfo = False
-                self._enable_breakpoints()
-            if args[0] == "disable" :
-                for bp in self._breakpoints :
-                    bp.enabled = False
-        elif len(args) == 2 :
-            if args[0] == "log" :
-                print(f"setting log to {args[1]}")
-                self._log = open(args[1], "w", encoding='utf8')
-                self._enable_breakpoints()
-            if args[0] == "break" :
-                print(f"adding breakpoint for {args[1]}")
-                info_addr = gdb.execute(f"info address {args[1]}", to_string=True)
-                addr = info_addr.split()[-1].rstrip('.')
-                self._breakpoints.append(EntryBreak(args[1], int(addr, 16), self))
-        elif len(args) == 0 :
+        if len(args) == 0 :
             gdb.execute("r")
+        else :
+            parse_args_switch = {
+                "minimal" : self._parse_minimal_args,
+                "nominimal" : self._parse_nominimal_args,
+                "log" : self._parse_log_args,
+                "sourceinfo" : self._parse_sourceinfo_args,
+                "nosourceinfo" : self._parse_nosourceinfo_args,
+                "disable" : self._parse_disable_args,
+                "break" : self._parse_break_args,
+            }
+            parse_args_switch[args[0]](args, from_tty)
 
-    def _enable_breakpoints(self) :
+    def _parse_minimal_args(self, _args, _from_tty) :
+        self._minimal = True
+        self._sourceinfo = False
+        self._enable_breakpoints(value=True)
+
+    def _parse_nominimal_args(self, _args, _from_tty) :
+        self._minimal = False
+        self._enable_breakpoints(value=True)
+
+    def _parse_log_args(self, args, _from_tty) :
+        if len(args) == 1 :
+            self._log = None
+            self._enable_breakpoints(value=True)
+        elif len(args) == 2 :
+            print(f"setting log to {args[1]}")
+            self._log = open(args[1], "w", encoding='utf8')
+            self._enable_breakpoints(value=True)
+
+    def _parse_sourceinfo_args(self, _args, _from_tty) :
+        self._sourceinfo = True
+        self._enable_breakpoints(value=True)
+
+    def _parse_nosourceinfo_args(self, _args, _from_tty) :
+        self._sourceinfo = False
+        self._enable_breakpoints(value=True)
+
+    def _parse_disable_args(self, _args, _from_tty) :
+        self._enable_breakpoints(value=False)
+
+    def _parse_break_args(self, args, _from_tty) :
+        print(f"adding breakpoint for {args[1]}")
+        info_addr = gdb.execute(f"info address {args[1]}", to_string=True)
+        addr = info_addr.split()[-1].rstrip('.')
+        self._breakpoints.append(EntryBreak(args[1], int(addr, 16), self))
+
+    def _enable_breakpoints(self, value : bool) :
         for bp in self._breakpoints :
-            bp.enabled = True
+            bp.enabled = value
 
 CallTrace()
